@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحليل المبيعات المتقدمة</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #4ca1af;
+            --accent: #ffeaa7;
+            --light: #f5f7f9;
+            --dark: #2d3436;
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --danger: #d63031;
+            --info: #0984e3;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .kpi-cards {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .kpi-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center;
+            border-top: 4px solid var(--secondary);
+            transition: transform 0.3s ease;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        
+        .kpi-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+        
+        .kpi-title {
+            color: var(--dark);
+            font-size: 14px;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            height: 320px;
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+            height: 350px;
+        }
+        
+        .double-width {
+            grid-column: span 2;
+        }
+        
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .filter-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-top: 8px;
+        }
+        
+        .recommendation {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-right: 5px solid var(--secondary);
+            margin-top: 20px;
+        }
+        
+        h1, h2, h3 {
+            color: var(--primary);
+        }
+        
+        .highlight {
+            background-color: var(--accent);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        
+        canvas {
+            max-width: 100%;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table th {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .data-table tr:hover {
+            background-color: rgba(76, 161, 175, 0.1);
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .progress {
+            height: 100%;
+            background-color: var(--secondary);
+        }
+        
+        @media (max-width: 1200px) {
+            .kpi-cards {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .double-width {
+                grid-column: 1;
+            }
+            
+            .filters {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .kpi-cards, .filters {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: var(--secondary);
+        }
+        
+        .tab-container {
+            display: flex;
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .tab {
+            padding: 15px 20px;
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .tab.active {
+            background: var(--secondary);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-chart-line"></i> لوحة تحليل بيانات المبيعات المتقدمة</h1>
+            <p>تحليل شامل ومفصل لأداء المبيعات بناءً على البيانات التاريخية لشهر يناير 2025</p>
+        </header>
+
+        <div class="tab-container">
+            <div class="tab active" onclick="switchTab(0)">نظرة عامة</div>
+            <div class="tab" onclick="switchTab(1)">تحليل المنتجات</div>
+            <div class="tab" onclick="switchTab(2)">تحليل المناطق</div>
+            <div class="tab" onclick="switchTab(3)">التفاصيل الكاملة</div>
+        </div>
+
+        <div class="tab-content active">
+            <div class="kpi-cards">
+                <div class="kpi-card">
+                    <div class="icon"><i class="fas fa-money-bill-wave"></i></div>
+                    <div class="kpi-value">375,292</div>
+                    <div class="kpi-title">إجمالي الإيرادات</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="icon"><i class="fas fa-cube"></i></div>
+                    <div class="kpi-value">5</div>
+                    <div class="kpi-title">عدد المنتجات</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="kpi-value">5</div>
+                    <div class="kpi-title">عدد المناطق</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="icon"><i class="fas fa-calculator"></i></div>
+                    <div class="kpi-value">2,502</div>
+                    <div class="kpi-title">متوسط الإيرادات (لكل عملية)</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="icon"><i class="fas fa-shopping-cart"></i></div>
+                    <div class="kpi-value">150</div>
+                    <div class="kpi-title">إجمالي المعاملات</div>
+                </div>
+            </div>
+
+            <div class="filters">
+                <div class="filter-item">
+                    <h3><i class="fas fa-calendar"></i> الفترة الزمنية</h3>
+                    <select id="dateRange">
+                        <option value="all">كل الفترة</option>
+                        <option value="week1">الأسبوع الأول (1-7)</option>
+                        <option value="week2">الأسبوع الثاني (8-14)</option>
+                        <option value="week3">الأسبوع الثالث (15-21)</option>
+                        <option value="week4">الأسبوع الرابع (22-30)</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <h3><i class="fas fa-cube"></i> المنتج</h3>
+                    <select id="productFilter">
+                        <option value="all">جميع المنتجات</option>
+                        <option value="منتج A">منتج A</option>
+                        <option value="منتج B">منتج B</option>
+                        <option value="منتج C">منتج C</option>
+                        <option value="منتج D">منتج D</option>
+                        <option value="منتج E">منتج E</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <h3><i class="fas fa-map-marker-alt"></i> المنطقة</h3>
+                    <select id="regionFilter">
+                        <option value="all">جميع المناطق</option>
+                        <option value="الرياض">الرياض</option>
+                        <option value="جدة">جدة</option>
+                        <option value="مكة">مكة</option>
+                        <option value="الدمام">الدمام</option>
+                        <option value="الخبر">الخبر</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <h3><i class="fas fa-chart-bar"></i> نوع الرسم البياني</h3>
+                    <select id="chartType">
+                        <option value="bar">أعمدة</option>
+                        <option value="line">خطي</option>
+                        <option value="pie">دائرية</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="dashboard">
+                <div class="chart-container">
+                    <h2><i class="fas fa-chart-bar"></i> الإيرادات حسب المنتج</h2>
+                    <canvas id="productsChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2><i class="fas fa-chart-pie"></i> التوزيع الجغرافي للمبيعات</h2>
+                    <canvas id="regionChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container full-width">
+                <h2><i class="fas fa-chart-line"></i> اتجاه المبيعات خلال يناير 2025</h2>
+                <canvas id="salesTrendChart"></canvas>
+            </div>
+
+            <div class="dashboard">
+                <div class="chart-container">
+                    <h2><i class="fas fa-percentage"></i> أداء المنتجات حسب المناطق</h2>
+                    <canvas id="productRegionChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2><i class="fas fa-trophy"></i> أعلى 5 أيام من حيث المبيعات</h2>
+                    <canvas id="topDaysChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content">
+            <div class="chart-container full-width">
+                <h2><i class="fas fa-chart-bar"></i> مقارنة أداء المنتجات بالتفصيل</h2>
+                <canvas id="detailedProductsChart"></canvas>
+            </div>
+            
+            <div class="comparison-container">
+                <div class="chart-container">
+                    <h2><i class="fas fa-balance-scale"></i> مقارنة الإيرادات حسب المنطقة لكل منتج</h2>
+                    <canvas id="productByRegionChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2><i class="fas fa-star"></i> أفضل المنتجات أداءً في كل منطقة</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>المنطقة</th>
+                                <th>أفضل منتج</th>
+                                <th>الإيرادات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>الرياض</td>
+                                <td>منتج A</td>
+                                <td>18,495</td>
+                            </tr>
+                            <tr>
+                                <td>جدة</td>
+                                <td>منتج D</td>
+                                <td>20,125</td>
+                            </tr>
+                            <tr>
+                                <td>مكة</td>
+                                <td>منتج B</td>
+                                <td>19,842</td>
+                            </tr>
+                            <tr>
+                                <td>الدمام</td>
+                                <td>منتج D</td>
+                                <td>19,357</td>
+                            </tr>
+                            <tr>
+                                <td>الخبر</td>
+                                <td>منتج B</td>
+                                <td>16,984</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content">
+            <div class="chart-container full-width">
+                <h2><i class="fas fa-map"></i> أداء المناطق بالتفصيل</h2>
+                <canvas id="detailedRegionChart"></canvas>
+            </div>
+            
+            <div class="dashboard">
+                <div class="chart-container">
+                    <h2><i class="fas fa-chart-line"></i> اتجاه المبيعات لكل منطقة</h2>
+                    <canvas id="regionTrendChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2><i class="fas fa-table"></i> توزيع المنتجات في كل منطقة</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>المنطقة</th>
+                                <th>منتج A</th>
+                                <th>منتج B</th>
+                                <th>منتج C</th>
+                                <th>منتج D</th>
+                                <th>منتج E</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>الرياض</td>
+                                <td>18,495</td>
+                                <td>15,284</td>
+                                <td>14,872</td>
+                                <td>15,120</td>
+                                <td>12,856</td>
+                            </tr>
+                            <tr>
+                                <td>جدة</td>
+                                <td>16,754</td>
+                                <td>17,235</td>
+                                <td>12,456</td>
+                                <td>20,125</td>
+                                <td>9,125</td>
+                            </tr>
+                            <tr>
+                                <td>مكة</td>
+                                <td>15,987</td>
+                                <td>19,842</td>
+                                <td>10,254</td>
+                                <td>18,456</td>
+                                <td>13,768</td>
+                            </tr>
+                            <tr>
+                                <td>الدمام</td>
+                                <td>17,235</td>
+                                <td>15,874</td>
+                                <td>9,874</td>
+                                <td>19,357</td>
+                                <td>12,224</td>
+                            </tr>
+                            <tr>
+                                <td>الخبر</td>
+                                <td>15,276</td>
+                                <td>16,984</td>
+                                <td>8,745</td>
+                                <td>18,824</td>
+                                <td>4,570</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content">
+            <h2><i class="fas fa-table"></i> البيانات الكاملة للمبيعات</h2>
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>المنتج</th>
+                            <th>المنطقة</th>
+                            <th>الإيرادات</th>
+                            <th>الأداء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2025-01-01</td>
+                            <td>منتج A</td>
+                            <td>الرياض</td>
+                            <td>4,039</td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 80%"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2025-01-01</td>
+                            <td>منتج B</td>
+                            <td>جدة</td>
+                            <td>3,997</td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 79%"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2025-01-01</td>
+                            <td>منتج C</td>
+                            <td>الخبر</td>
+                            <td>2,645</td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 52%"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2025-01-01</td>
+                            <td>منتج D</td>
+                            <td>جدة</td>
+                            <td>4,754</td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 94%"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2025-01-01</td>
+                            <td>منتج E</td>
+                            <td>جدة</td>
+                            <td>3,568</td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 70%"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2025-01-02</td>
+                            <td>منتج A</td>
+                            <td>الرياض</td>
+                            <td>1,341</td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 26%"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2025-01-02</td>
+                            <td>منتج B</td>
+                            <td>مكة</td>
+                            <td>1,802</td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 35%"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- يمكن إضافة المزيد من الصفوف هنا -->
+                        <tr>
+                            <td colspan="3"><strong>المجموع</strong></td>
+                            <td><strong>375,292</strong></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="recommendation">
+            <h2><i class="fas fa-lightbulb"></i> توصيات عملية لتحسين الإيرادات</h2>
+            <p>بناءً على التحليل المفصل لبيانات المبيعات، نوصي بما يلي:</p>
+            
+            <h3>١. تحسين أداء المنتجات</h3>
+            <ul>
+                <li>التركيز على <span class="highlight">المنتج D</span> وتوسيع نطاق توزيعه في المناطق ذات الأداء المنخفض (خاصة الخبر)</li>
+                <li>تحسين أداء <span class="highlight">المنتج E</span> الذي يسجل أقل إيرادات بين جميع المنتجات من خلال عروض ترويجية مستهدفة</li>
+                <li>تحليل أسباب تفوق المنتج D وتطبيق استراتيجياته التسويقية على المنتجات الأخرى</li>
+            </ul>
+            
+            <h3>٢. تحسين التوزيع الجغرافي</h3>
+            <ul>
+                <li>استهداف <span class="highlight">منطقة الخبر</span> بحملات ترويجية خاصة لتعزيز الأداء فيها</li>
+                <li>دراسة أسباب تفوق منطقة مكة في المبيعات وتطبيق استراتيجياتها في المناطق الأخرى</li>
+                <li>تخصيص منتجات محددة لكل منطقة بناءً على أداء المنتجات في تلك المنطقة</li>
+            </ul>
+            
+            <h3>٣. تحسين الأداء الزمني</h3>
+            <ul>
+                <li>دراسة أسباب التذبذب اليومي في المبيعات وتنفيذ استراتيجيات لتسوية المنحنى</li>
+                <li>عرض حزم منتجات مجمعة بخصم خاص لتعزيز المبيعات في الأيام المنخفضة</li>
+                <li>تنفيذ عروض ترويجية في نهاية الأسبوع لتعزيز المبيعات</li>
+            </ul>
+            
+            <h3>٤. توصيات إضافية</h3>
+            <ul>
+                <li>إنشاء حزم منتجات مخصصة لكل منطقة بناءً على تفضيلات العملاء</li>
+                <li>تحليل بيانات العملاء لتطوير استراتيجيات تسويقية أكثر تخصيصًا</li>
+                <li>إطلاق منتج جديد في المناطق ذات الأداء المرتفع لتعزيز النمو</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // بيانات أكثر المنتجات مبيعاً
+        const productsData = {
+            labels: ['منتج D', 'منتج A', 'منتج B', 'منتج C', 'منتج E'],
+            datasets: [{
+                label: 'الإيرادات',
+                data: [91882, 84747, 83603, 55201, 60859],
+                backgroundColor: ['#4ca1af', '#c4e0e5', '#2c3e50', '#f8b195', '#6c5b7b'],
+                borderWidth: 1
+            }]
+        };
+
+        // بيانات التوزيع الجغرافي
+        const regionData = {
+            labels: ['مكة', 'الرياض', 'جدة', 'الدمام', 'الخبر'],
+            datasets: [{
+                data: [78307, 76627, 75695, 74564, 64399],
+                backgroundColor: ['#4ca1af', '#c4e0e5', '#2c3e50', '#f8b195', '#6c5b7b'],
+                borderWidth: 1
+            }]
+        };
+
+        // بيانات اتجاه المبيعات خلال يناير
+        const dailyLabels = Array.from({length: 30}, (_, i) => `${i+1}`);
+        const dailyRevenue = [
+            19003, 10819, 17595, 9589, 18540, 15207, 16091, 15920, 14910, 10992,
+            12222, 18082, 13492, 11277, 13502, 10867, 13643, 12490, 9255, 12659,
+            14712, 17191, 11959, 14078, 12447, 13442, 11131, 10453, 12574, 16051
+        ];
+        
+        const monthlyData = {
+            labels: dailyLabels,
+            datasets: [{
+                label: 'الإيرادات اليومية',
+                data: dailyRevenue,
+                fill: true,
+                backgroundColor: 'rgba(76, 161, 175, 0.2)',
+                borderColor: '#4ca1af',
+                tension: 0.4,
+                pointBackgroundColor: '#4ca1af',
+                pointRadius: 4
+            }]
+        };
+
+        // بيانات أداء المنتجات حسب المناطق
+        const productRegionData = {
+            labels: ['الرياض', 'جدة', 'مكة', 'الدمام', 'الخبر'],
+            datasets: [
+                {
+                    label: 'منتج A',
+                    data: [18495, 16754, 15987, 17235, 15276],
+                    backgroundColor: '#4ca1af',
+                },
+                {
+                    label: 'منتج B',
+                    data: [15284, 17235, 19842, 15874, 16984],
+                    backgroundColor: '#c4e0e5',
+                },
+                {
+                    label: 'منتج C',
+                    data: [14872, 12456, 10254, 9874, 8745],
+                    backgroundColor: '#2c3e50',
+                },
+                {
+                    label: 'منتج D',
+                    data: [15120, 20125, 18456, 19357, 18824],
+                    backgroundColor: '#f8b195',
+                },
+                {
+                    label: 'منتج E',
+                    data: [12856, 9125, 13768, 12224, 4570],
+                    backgroundColor: '#6c5b7b',
+                }
+            ]
+        };
+
+        // بيانات أفضل الأيام
+        const topDaysData = {
+            labels: ['اليوم 3', 'اليوم 5', 'اليوم 22', 'اليوم 30', 'اليوم 12'],
+            datasets: [{
+                label: 'الإيرادات',
+                data: [17595, 18540, 17191, 16051, 18082],
+                backgroundColor: ['#4ca1af', '#c4e0e5', '#2c3e50', '#f8b195', '#6c5b7b'],
+                borderWidth: 1
+            }]
+        };
+
+        // تهيئة المخططات
+        function initCharts() {
+            // مخطط المنتجات
+            const productsCtx = document.getElementById('productsChart').getContext('2d');
+            new Chart(productsCtx, {
+                type: 'bar',
+                data: productsData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `الإيرادات: ${context.raw.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // مخطط المناطق
+            const regionCtx = document.getElementById('regionChart').getContext('2d');
+            new Chart(regionCtx, {
+                type: 'doughnut',
+                data: regionData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `الإيرادات: ${value.toLocaleString()} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // مخطط اتجاه المبيعات
+            const trendCtx = document.getElementById('salesTrendChart').getContext('2d');
+            new Chart(trendCtx, {
+                type: 'line',
+                data: monthlyData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'أيام يناير'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // مخطط أداء المنتجات حسب المناطق
+            const productRegionCtx = document.getElementById('productRegionChart').getContext('2d');
+            new Chart(productRegionCtx, {
+                type: 'bar',
+                data: productRegionData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // مخطط أفضل الأيام
+            const topDaysCtx = document.getElementById('topDaysChart').getContext('2d');
+            new Chart(topDaysCtx, {
+                type: 'bar',
+                data: topDaysData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `الإيرادات: ${context.raw.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // تبديل التبويبات
+        function switchTab(tabIndex) {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach((tab, index) => {
+                if (index === tabIndex) {
+                    tab.classList.add('active');
+                    tabContents[index].classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                    tabContents[index].classList.remove('active');
+                }
+            });
+        }
+
+        // إضافة التفاعلية للفلاتر
+        document.getElementById('dateRange').addEventListener('change', updateCharts);
+        document.getElementById('productFilter').addEventListener('change', updateCharts);
+        document.getElementById('regionFilter').addEventListener('change', updateCharts);
+        document.getElementById('chartType').addEventListener('change', updateCharts);
+
+        function updateCharts() {
+            // هنا سيتم تحديث البيانات حسب الفلاتر المحددة
+            // في تطبيق حقيقي، سيتم جلب البيانات المصفاة من الخادم
+            alert('في تطبيق حقيقي، سيتم تحديث البيانات حسب الفلاتر المحددة');
+        }
+
+        // تهيئة المخططات عند تحميل الصفحة
+        window.onload = initCharts;
+    </script>
+</body>
+</html>
